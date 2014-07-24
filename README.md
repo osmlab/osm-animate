@@ -6,7 +6,7 @@ Dependencies: [osm-snap](https://github.com/ericfischer/osm-snap), [datamaps](ht
 Desired Outcome:
 
 - User specifies a bounding box (via ...)
-- User sees a gif/video/Mapbox GL layer of the OSM changes over time
+- User sees a gif/video/Mapbox GL layer of the OSM changes (only way creation/last edit) over time
 
 Plan:
 
