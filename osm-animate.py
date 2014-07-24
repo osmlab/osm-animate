@@ -1,6 +1,5 @@
 import os
 import glob
-import csv
 from bs4 import BeautifulSoup
 import re
 from dateutil import parser
