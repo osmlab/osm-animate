@@ -6,8 +6,8 @@ from dateutil import parser
 from dateutil import relativedelta
 
 ## input settings
-osm_file = "/Users/andrewbollinger/Downloads/ghaziabadmap.osm"
-place_name = "ghaziabad" ## for the gif
+osm_file = "/Users/andrewbollinger/Downloads/suratmap.osm"
+place_name = "surat" ## for the gif
 
 ## use snap.c to convert osm file to format suitable for datamaps
 os.system("cat " + osm_file + " | ./snap > datamapfile")
@@ -28,6 +28,18 @@ for row in rs:
     row[2] = rd.years * 12 + rd.months
 
 total_frames = max(rs, key = lambda x: x[2])[2]
+
+## also get a bounding box for later rendering
+
+nodes = soup.find_all('node')
+nll = []
+for node in nodes:
+    nll.append([node['lat'],node['lon']])
+
+min_lat = min(nll, key = lambda x: x[0])[0]
+min_lon = min(nll, key = lambda x: x[1])[1]
+max_lat = max(nll, key = lambda x: x[0])[0]
+max_lon = max(nll, key = lambda x: x[1])[1]
 
 ## use above info to save each frame as a separate file
 with open('datamapfile') as f:
@@ -54,7 +66,7 @@ for index, file in enumerate(frame_list):
 
 ## render
 for d in range(1,total_frames+1):
-    os.system("./render -t 0 -A -- \"" + str(d) + "\" 12 28.4 77.1 28.9 77.4 > " + str(d).zfill(4) +".png") ## need to dynamically produce the bounding box
+    os.system("./render -t 0 -A -- \"" + str(d) + "\" 12 " + min_lat + " " + min_lon + " " + max_lat + " " + max_lon + " > " + str(d).zfill(4) +".png")
 
 ## animate
 os.system("convert -coalesce -dispose 1 -delay 20 -loop 0 *.png " + place_name + ".gif") ## still need to add first frame of black background
