@@ -4,13 +4,18 @@ from bs4 import BeautifulSoup
 import re
 from dateutil import parser
 from dateutil import relativedelta
+import subprocess
 
 ## input settings
 osm_file = "/Users/andrewbollinger/Downloads/suratmap.osm"
-place_name = "surat" ## for the gif
+place_name = "surat" ## for the directories and gif
+
+## make a directory just for this to contain the mess; there's probably a better way to move the working directory then how I've handled below, that can be a future improvement
+if not os.path.exists(place_name):
+    os.makedirs(place_name)
 
 ## use snap.c to convert osm file to format suitable for datamaps
-os.system("cat " + osm_file + " | ./snap > datamapfile")
+os.system("cat " + osm_file + " | ./snap > " + place_name +"/datamapfile")
 
 ## use beautiful soup to get timestamps from osm file and set frames (should ideally be done in C but I don't know how)
 
@@ -42,7 +47,7 @@ max_lat = max(nll, key = lambda x: x[0])[0]
 max_lon = max(nll, key = lambda x: x[1])[1]
 
 ## use above info to save each frame as a separate file
-with open('datamapfile') as f:
+with open(place_name + "/datamapfile") as f:
     lines = f.readlines()
     for i in range(0,total_frames):
         output = []
@@ -53,20 +58,27 @@ with open('datamapfile') as f:
         for line in lines:
             if (re.search("id=(\d+)",line).group(1) in flt_ids):
                 output.append(line)
-        g = open('frame_' + repr(i+1).zfill(4), 'w')
+        g = open(place_name + "/frame_" + repr(i+1).zfill(4), 'w')
         g.write(''.join(output))
         g.close()
 
 ## get the frames
-frame_list = glob.glob("frame*")
+frame_list = glob.glob(place_name + "/frame*")
 
 ## encode
 for index, file in enumerate(frame_list):
-    os.system("cat " + file + " | ./encode -o \"" + str(index+1) +"\" -z 12")
+    os.system("cat " + file + " | ./encode -o \"" + place_name + "/" + str(index+1) +"\" -z 12")
 
 ## render
 for d in range(1,total_frames+1):
-    os.system("./render -t 0 -A -- \"" + str(d) + "\" 12 " + min_lat + " " + min_lon + " " + max_lat + " " + max_lon + " > " + str(d).zfill(4) +".png")
+    os.system("./render -t 0 -A -- \"" + place_name + "/" + str(d) + "\" 12 " + min_lat + " " + min_lon + " " + max_lat + " " + max_lon + " > " + place_name + "/" + str(d).zfill(4) +".png")
+
+## get png size
+image_output = subprocess.check_output(["identify", place_name + "/0001.png"])
+ps = re.search("PNG (\d+x\d+)",image_output).group(1)
+
+## create a starter black frame
+os.system("convert -size " + ps + " canvas:black " + place_name + "/" + "0000.png")
 
 ## animate
-os.system("convert -coalesce -dispose 1 -delay 20 -loop 0 *.png " + place_name + ".gif") ## still need to add first frame of black background
+os.system("convert -coalesce -dispose 1 -delay 20 -loop 0 " + place_name + "/*.png " + place_name + "/" + place_name + ".gif")
