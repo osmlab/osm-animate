@@ -7,8 +7,8 @@ from dateutil import relativedelta
 import subprocess
 
 ## input settings
-osm_file = "/Users/andrewbollinger/Downloads/suratmap.osm"
-place_name = "surat" ## for the directories and gif
+osm_file = "/Users/andrewbollinger/Downloads/sanaamap.osm"
+place_name = "sanaa" ## for the directories and gif
 
 ## make a directory just for this to contain the mess; there's probably a better way to move the working directory then how I've handled below, that can be a future improvement
 if not os.path.exists(place_name):
@@ -27,13 +27,18 @@ print "There are " + repr(len(ways))+ " ways"
 for way in ways:
     rows.append([way['id'],way['timestamp'],0])
 
-rs = sorted(rows, key=lambda entry: entry[1])
+rs = sorted(rows, key=lambda x: x[1])
 for row in rs:
     rd = relativedelta.relativedelta(parser.parse(row[1]),parser.parse(rs[0][1]))
     row[2] = rd.years * 12 + rd.months
 
 total_frames = max(rs, key = lambda x: x[2])[2]
-
+## there has to be a better way to do this next part but I wrote it on a plane with no access to stack-overflow
+date_list = []
+for i in range(total_frames+1):
+    list_year = (parser.parse(rs[1][1]) + relativedelta.relativedelta(months=i)).year
+    list_month = (parser.parse(rs[1][1]) + relativedelta.relativedelta(months=i)).month
+    date_list.append(str(list_year) + "-" + str(list_month).zfill(2))
 ## also get a bounding box for later rendering
 
 nodes = soup.find_all('node')
@@ -71,14 +76,21 @@ for index, file in enumerate(frame_list):
 
 ## render
 for d in range(1,total_frames+1):
-    os.system("./render -t 0 -A -- \"" + place_name + "/" + str(d) + "\" 12 " + min_lat + " " + min_lon + " " + max_lat + " " + max_lon + " > " + place_name + "/" + str(d).zfill(4) +".png")
+    os.system("./render -t 0 -A -- \"" + place_name + "/" + str(d) + "\" 10 " + min_lat + " " + min_lon + " " + max_lat + " " + max_lon + " > " + place_name + "/" + str(d).zfill(4) +".png")
 
 ## get png size
 image_output = subprocess.check_output(["identify", place_name + "/0001.png"])
-ps = re.search("PNG (\d+x\d+)",image_output).group(1)
+ps_width = re.search("PNG (\d+)x\d+",image_output).group(1)
+ps_height = re.search("PNG \d+x(\d+)",image_output).group(1)
+
+## make labels and join them to their image buddy
+for i in range(1,total_frames+1):
+    fr = str(i).zfill(4)
+    os.system("convert -size " + ps_width + "x50 -gravity center -background black -stroke white -fill white label:'" + place_name + " " + date_list[i] + "' " + place_name + "/" + fr + "_label.png")
+    os.system("convert -append " + place_name + "/" + fr +".png " + place_name + "/" + fr + "_label.png " + place_name + "/frame" + fr + ".png")
 
 ## create a starter black frame
-os.system("convert -size " + ps + " canvas:black " + place_name + "/" + "0000.png")
+os.system("convert -size " + ps_width + "x" + str(int(ps_height) + 50) + " canvas:black " + place_name + "/" + "frame0000.png")
 
 ## animate
-os.system("convert -coalesce -dispose 1 -delay 20 -loop 0 " + place_name + "/*.png " + place_name + "/" + place_name + ".gif")
+os.system("convert -coalesce -dispose 1 -delay 20 -loop 0 " + place_name + "/frame*.png " + place_name + "/" + place_name + ".gif")
