@@ -5,10 +5,11 @@ import re
 from dateutil import parser
 from dateutil import relativedelta
 import subprocess
+import sys
 
 ## input settings
-osm_file = "/Users/andrewbollinger/Downloads/sanaamap.osm"
-place_name = "sanaa" ## for the directories and gif
+osm_file = str(sys.argv[1])
+place_name = str(sys.argv[2]) ## for the directories and gif
 
 ## make a directory just for this to contain the mess; there's probably a better way to move the working directory then how I've handled below, that can be a future improvement
 if not os.path.exists(place_name):
@@ -39,17 +40,23 @@ for i in range(total_frames+1):
     list_year = (parser.parse(rs[1][1]) + relativedelta.relativedelta(months=i)).year
     list_month = (parser.parse(rs[1][1]) + relativedelta.relativedelta(months=i)).month
     date_list.append(str(list_year) + "-" + str(list_month).zfill(2))
-## also get a bounding box for later rendering
 
-nodes = soup.find_all('node')
-nll = []
-for node in nodes:
-    nll.append([node['lat'],node['lon']])
-
-min_lat = min(nll, key = lambda x: x[0])[0]
-min_lon = min(nll, key = lambda x: x[1])[1]
-max_lat = max(nll, key = lambda x: x[0])[0]
-max_lon = max(nll, key = lambda x: x[1])[1]
+## set zoom and bounding box according to defaults or passed arguments
+if len(sys.argv) < 4:
+    bounds = soup.find('bounds')
+    min_lat = bounds['minlat']
+    min_lon = bounds['minlon']
+    max_lat = bounds['maxlat']
+    max_lon = bounds['maxlon']
+    zoom_level = '12'
+elif len(sys.argv) < 5:
+    zoom_level = str(sys.argv[3])
+else:
+    zoom_level = str(sys.argv[3])
+    min_lat = str(sys.argv[4])
+    min_lon = str(sys.argv[5])
+    max_lat = str(sys.argv[6])
+    max_lon = str(sys.argv[7])
 
 ## use above info to save each frame as a separate file
 with open(place_name + "/datamapfile") as f:
@@ -72,11 +79,11 @@ frame_list = glob.glob(place_name + "/frame*")
 
 ## encode
 for index, file in enumerate(frame_list):
-    os.system("cat " + file + " | ./encode -o \"" + place_name + "/" + str(index+1) +"\" -z 12")
+    os.system("cat " + file + " | ./encode -o \"" + place_name + "/" + str(index+1) +"\" -z " + zoom_level)
 
 ## render
 for d in range(1,total_frames+1):
-    os.system("./render -t 0 -A -- \"" + place_name + "/" + str(d) + "\" 10 " + min_lat + " " + min_lon + " " + max_lat + " " + max_lon + " > " + place_name + "/" + str(d).zfill(4) +".png")
+    os.system("./render -t 0 -A -- \"" + place_name + "/" + str(d) + "\" " + zoom_level + " " + min_lat + " " + min_lon + " " + max_lat + " " + max_lon + " > " + place_name + "/" + str(d).zfill(4) +".png")
 
 ## get png size
 image_output = subprocess.check_output(["identify", place_name + "/0001.png"])
@@ -94,3 +101,6 @@ os.system("convert -size " + ps_width + "x" + str(int(ps_height) + 50) + " canva
 
 ## animate
 os.system("convert -coalesce -dispose 1 -delay 20 -loop 0 " + place_name + "/frame*.png " + place_name + "/" + place_name + ".gif")
+
+## redo the gif with pause at the end
+os.system("convert " + place_name + "/" + place_name + ".gif \( +clone -set delay 500 \) +swap +delete " + place_name + "/" + place_name + ".gif")
