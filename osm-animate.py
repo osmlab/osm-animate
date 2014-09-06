@@ -34,7 +34,7 @@ for row in rs:
     row[2] = rd.years * 12 + rd.months
 
 total_frames = max(rs, key = lambda x: x[2])[2]
-print "There are " + (total_frames+1) + " frames to render."
+print "There are " + str(total_frames) + " frames to render."
 
 ## there has to be a better way to do this next part but I wrote it on a plane with no access to stack-overflow
 date_list = []
@@ -64,7 +64,7 @@ else:
 with open(place_name + "/datamapfile") as f:
     lines = f.readlines()
     for i in range(0,total_frames):
-        print "Saving frame_" + repr(i+1).zfill(4) + "..."
+        print "Creating frame " + str(repr(i+1)) + "..."
         output = []
         ## create temp array of ids that match this frame
         flt = filter(lambda x: x[2] == i,rs)
@@ -86,6 +86,7 @@ for index, file in enumerate(frame_list):
 
 ## render
 for d in range(1,total_frames+1):
+    print "Rendering frame " + str(d) + "..."
     os.system("./render -t 0 -A -- \"" + place_name + "/" + str(d) + "\" " + zoom_level + " " + min_lat + " " + min_lon + " " + max_lat + " " + max_lon + " > " + place_name + "/" + str(d).zfill(4) +".png")
 
 ## get png size
@@ -96,6 +97,7 @@ ps_height = re.search("PNG \d+x(\d+)",image_output).group(1)
 ## make labels and join them to their image buddy
 for i in range(1,total_frames+1):
     fr = str(i).zfill(4)
+    print "Creating label " + str(fr) + "..."
     os.system("convert -size " + ps_width + "x50 -gravity center -background black -stroke white -fill white label:'" + place_name + " " + date_list[i] + "' " + place_name + "/" + fr + "_label.png")
     os.system("convert -append " + place_name + "/" + fr +".png " + place_name + "/" + fr + "_label.png " + place_name + "/frame" + fr + ".png")
 
@@ -103,7 +105,9 @@ for i in range(1,total_frames+1):
 os.system("convert -size " + ps_width + "x" + str(int(ps_height) + 50) + " canvas:black " + place_name + "/" + "frame0000.png")
 
 ## animate
+print "Animating..."
 os.system("convert -coalesce -dispose 1 -delay 20 -loop 0 " + place_name + "/frame*.png " + place_name + "/" + place_name + ".gif")
 
 ## redo the gif with pause at the end
+print "GIFing..."
 os.system("convert " + place_name + "/" + place_name + ".gif \( +clone -set delay 500 \) +swap +delete " + place_name + "/" + place_name + ".gif")
