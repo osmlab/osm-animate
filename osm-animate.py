@@ -24,7 +24,7 @@ soup = BeautifulSoup(open(osm_file))
 
 ways = soup.find_all('way')
 rows = []
-print "There are " + repr(len(ways))+ " ways"
+print "There are " + repr(len(ways))+ " ways."
 for way in ways:
     rows.append([way['id'],way['timestamp'],0])
 
@@ -34,6 +34,8 @@ for row in rs:
     row[2] = rd.years * 12 + rd.months
 
 total_frames = max(rs, key = lambda x: x[2])[2]
+print "There are " + (total_frames+1) + " frames to render."
+
 ## there has to be a better way to do this next part but I wrote it on a plane with no access to stack-overflow
 date_list = []
 for i in range(total_frames+1):
@@ -62,6 +64,7 @@ else:
 with open(place_name + "/datamapfile") as f:
     lines = f.readlines()
     for i in range(0,total_frames):
+        print "Saving frame_" + repr(i+1).zfill(4) + "..."
         output = []
         ## create temp array of ids that match this frame
         flt = filter(lambda x: x[2] == i,rs)
