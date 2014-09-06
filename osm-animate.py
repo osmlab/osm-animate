@@ -98,7 +98,7 @@ ps_height = re.search("PNG \d+x(\d+)",image_output).group(1)
 for i in range(1,total_frames+1):
     fr = str(i).zfill(4)
     print "Creating label " + str(fr) + "..."
-    os.system("convert -size " + ps_width + "x50 -gravity center -background black -stroke white -fill white label:'" + place_name + " " + date_list[i] + "' " + place_name + "/" + fr + "_label.png")
+    os.system("convert -size " + ps_width + "x50 -gravity -font Helvetica-Narrow center -background black -stroke white -fill white label:'" + place_name + " " + date_list[i] + "' " + place_name + "/" + fr + "_label.png")
     os.system("convert -append " + place_name + "/" + fr +".png " + place_name + "/" + fr + "_label.png " + place_name + "/frame" + fr + ".png")
 
 ## create a starter black frame
